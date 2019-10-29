@@ -28,6 +28,8 @@ namespace Shopee.Web
 
             services.AddTransient<SeedDb>();
 
+            services.AddScoped<IRepository, Repository>();
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
