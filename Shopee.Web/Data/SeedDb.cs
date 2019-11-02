@@ -24,13 +24,13 @@ namespace Shopee.Web.Data
         {
             await context.Database.EnsureCreatedAsync();
 
-            var user = await this.userManager.FindByEmailAsync("jzuluaga55@gmail.com");
+            var user = await this.userManager.FindByEmailAsync("grados_2008@hotmail.com");
             if (user == null)
             {
                 user = new User
                 {
                     FirstName = "Raúl",
-                    LastName = "Gradis",
+                    LastName = "Grados",
                     Email = "grados_2008@hotmail.com",
                     UserName = "rgrados",
                     PhoneNumber = "+51961819297"
