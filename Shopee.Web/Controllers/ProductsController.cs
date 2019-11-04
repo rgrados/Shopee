@@ -10,29 +10,29 @@ namespace Shopee.Web.Controllers
 
     public class ProductsController : Controller
     {
-        private readonly IRepository repository;
+        private readonly IProductRepository productRepository;
+
         private readonly IUserHelper userHelper;
 
-        public ProductsController(IRepository repository, IUserHelper userHelper)
+        public ProductsController(IProductRepository productRepository, IUserHelper userHelper)
         {
-            this.repository = repository;
+            this.productRepository = productRepository;
             this.userHelper = userHelper;
         }
 
         public IActionResult Index()
         {
-            return View(repository.GetProducts());
+            return View(productRepository.GetAll());
         }
 
-        public IActionResult Details(int? id)
+        public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var product = repository.GetProduct(id.Value);
-
+            var product = await productRepository.GetByIdAsync(id.Value);
             if (product == null)
             {
                 return NotFound();
@@ -52,25 +52,23 @@ namespace Shopee.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                // TODO: Refactor email logged user
+                // TODO: Pending to change to: this.User.Identity.Name
                 product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
-                repository.AddProduct(product);
-                await repository.SaveAllAsync();
+                await productRepository.CreateAsync(product);
                 return RedirectToAction(nameof(Index));
             }
 
             return View(product);
         }
 
-        public IActionResult Edit(int? id)
+        public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var product = repository.GetProduct(id.Value);
-
+            var product = await productRepository.GetByIdAsync(id.Value);
             if (product == null)
             {
                 return NotFound();
@@ -87,14 +85,13 @@ namespace Shopee.Web.Controllers
             {
                 try
                 {
-                    // TODO: Refactor email logged user
+                    // TODO: Pending to change to: this.User.Identity.Name
                     product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
-                    repository.UpdateProduct(product);
-                    await repository.SaveAllAsync();
+                    await this.productRepository.UpdateAsync(product);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!repository.ProductExists(product.Id))
+                    if (!await productRepository.ExistAsync(product.Id))
                     {
                         return NotFound();
                     }
@@ -103,22 +100,20 @@ namespace Shopee.Web.Controllers
                         throw;
                     }
                 }
-
                 return RedirectToAction(nameof(Index));
             }
 
             return View(product);
         }
 
-        public IActionResult Delete(int? id)
+        public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var product = repository.GetProduct(id.Value);
-
+            var product = await productRepository.GetByIdAsync(id.Value);
             if (product == null)
             {
                 return NotFound();
@@ -131,10 +126,8 @@ namespace Shopee.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var product = repository.GetProduct(id);
-            repository.RemoveProduct(product);
-            await repository.SaveAllAsync();
-
+            var product = await productRepository.GetByIdAsync(id);
+            await this.productRepository.DeleteAsync(product);
             return RedirectToAction(nameof(Index));
         }
     }
