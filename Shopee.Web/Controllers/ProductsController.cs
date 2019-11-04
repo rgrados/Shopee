@@ -1,19 +1,22 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Shopee.Web.Data;
-using Shopee.Web.Data.Entities;
-
-namespace Shop.Web.Controllers
+﻿
+namespace Shopee.Web.Controllers
 {
+    using System.Threading.Tasks;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.EntityFrameworkCore;
+    using Data;
+    using Data.Entities;
+    using Helpers;
+
     public class ProductsController : Controller
     {
         private readonly IRepository repository;
+        private readonly IUserHelper userHelper;
 
-        public ProductsController(IRepository repository)
+        public ProductsController(IRepository repository, IUserHelper userHelper)
         {
             this.repository = repository;
+            this.userHelper = userHelper;
         }
 
         public IActionResult Index()
@@ -49,6 +52,8 @@ namespace Shop.Web.Controllers
         {
             if (ModelState.IsValid)
             {
+                // TODO: Refactor email logged user
+                product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
                 repository.AddProduct(product);
                 await repository.SaveAllAsync();
                 return RedirectToAction(nameof(Index));
@@ -82,6 +87,8 @@ namespace Shop.Web.Controllers
             {
                 try
                 {
+                    // TODO: Refactor email logged user
+                    product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
                     repository.UpdateProduct(product);
                     await repository.SaveAllAsync();
                 }
