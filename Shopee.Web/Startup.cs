@@ -45,7 +45,7 @@ namespace Shopee.Web
 
             services.AddTransient<SeedDb>();
 
-            services.AddScoped<IRepository, Repository>();
+            services.AddScoped<IProductRepository, ProductRepository>();
 
             services.AddScoped<IUserHelper, UserHelper>();
             
