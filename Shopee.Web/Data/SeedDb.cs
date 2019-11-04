@@ -6,17 +6,18 @@ namespace Shopee.Web.Data
     using System.Threading.Tasks;
     using Entities;
     using Microsoft.AspNetCore.Identity;
+    using Shopee.Web.Helpers;
 
     public class SeedDb
     {
         private readonly DataContext context;
-        private readonly UserManager<User> userManager;
+        private readonly IUserHelper userHelper;
         private readonly Random random;
 
-        public SeedDb(DataContext context, UserManager<User> userManager)
+        public SeedDb(DataContext context, IUserHelper userHelper)
         {
             this.context = context;
-            this.userManager = userManager;
+            this.userHelper = userHelper;
             random = new Random();
         }
 
@@ -24,7 +25,7 @@ namespace Shopee.Web.Data
         {
             await context.Database.EnsureCreatedAsync();
 
-            var user = await this.userManager.FindByEmailAsync("grados_2008@hotmail.com");
+            var user = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
             if (user == null)
             {
                 user = new User
@@ -36,7 +37,7 @@ namespace Shopee.Web.Data
                     PhoneNumber = "+51961819297"
                 };
 
-                var result = await this.userManager.CreateAsync(user, "mejorando");
+                var result = await userHelper.AddUserAsync(user, "mejorando");
                 if (result != IdentityResult.Success)
                 {
                     throw new InvalidOperationException("Could not create the user in seeder");
