@@ -33,7 +33,7 @@
 
         public async Task<SignInResult> LoginAsync(LoginViewModel model)
         {
-            return await signInManager.PasswordSignInAsync(model.Username,model.Password,model.RememberMe,false);
+            return await signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, false);
         }
 
         public async Task LogoutAsync()
@@ -44,6 +44,11 @@
         public async Task<IdentityResult> UpdateUserAsync(User user)
         {
             return await userManager.UpdateAsync(user);
+        }
+
+        public async Task<SignInResult> ValidatePasswordAsync(User user, string password)
+        {
+            return await signInManager.CheckPasswordSignInAsync(user,password,false);
         }
     }
 }

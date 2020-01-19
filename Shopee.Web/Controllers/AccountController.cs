@@ -1,20 +1,28 @@
 ﻿namespace Shopee.Web.Controllers
 {
+    using System;
     using System.Linq;
     using System.Threading.Tasks;
+    using System.Security.Claims;
+    using System.IdentityModel.Tokens.Jwt;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.Extensions.Configuration;
     using Helpers;
     using Models;
     using Mappers;
+    using Microsoft.IdentityModel.Tokens;
+    using System.Text;
 
     public class AccountController : Controller
     {
         private readonly IUserHelper userHelper;
+        private readonly IConfiguration configuration;
 
-        public AccountController(IUserHelper userHelper)
+        public AccountController(IUserHelper userHelper, IConfiguration configuration)
         {
             this.userHelper = userHelper;
+            this.configuration = configuration;
         }
 
         public IActionResult Login()
@@ -157,6 +165,46 @@
             }
 
             return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateToken([FromBody] LoginViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await userHelper.GetUserByEmailAsync(model.Username);
+                if (user != null)
+                {
+                    var result = await userHelper.ValidatePasswordAsync(user, model.Password);
+
+                    if (result.Succeeded)
+                    {
+                        var claims = new[]
+                        {
+                            new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                        };
+
+                        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Tokens:Key"]));
+                        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                        var token = new JwtSecurityToken(
+                            configuration["Tokens:Issuer"],
+                            configuration["Tokens:Audience"],
+                            claims,
+                            expires: DateTime.UtcNow.AddDays(15),
+                            signingCredentials: credentials);
+                        var results = new
+                        {
+                            token = new JwtSecurityTokenHandler().WriteToken(token),
+                            expiration = token.ValidTo
+                        };
+
+                        return Created(string.Empty, results);
+                    }
+                }
+            }
+
+            return this.BadRequest();
         }
     }
 }

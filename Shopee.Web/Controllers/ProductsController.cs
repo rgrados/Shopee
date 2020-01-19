@@ -5,13 +5,15 @@ namespace Shopee.Web.Controllers
     using System.IO;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.AspNetCore.Authorization;
     using Data;
     using Data.Entities;
     using Helpers;
     using Models;
     using Mappers;
     using System.Linq;
-
+    
+    [Authorize]
     public class ProductsController : Controller
     {
         private readonly IProductRepository productRepository;
