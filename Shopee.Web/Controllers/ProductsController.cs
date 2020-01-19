@@ -2,11 +2,14 @@
 namespace Shopee.Web.Controllers
 {
     using System.Threading.Tasks;
+    using System.IO;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using Data;
     using Data.Entities;
     using Helpers;
+    using Models;
+    using Mappers;
 
     public class ProductsController : Controller
     {
@@ -48,17 +51,33 @@ namespace Shopee.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Product product)
+        public async Task<IActionResult> Create(ProductViewModel productViewModel)
         {
             if (ModelState.IsValid)
             {
+                string path = string.Empty;
+
+                if (productViewModel.ImageFile != null && productViewModel.ImageFile.Length > 0)
+                {
+                    path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images\\products", productViewModel.ImageFile.FileName);
+
+                    using (var stream = new FileStream(path, FileMode.Create))
+                    {
+                        await productViewModel.ImageFile.CopyToAsync(stream);
+                    }
+
+                    path = $"~/images/products/{productViewModel.ImageFile.FileName}";
+                }
+
+                Product product = productViewModel.ToProduct(path);
+
                 // TODO: Pending to change to: this.User.Identity.Name
                 product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
                 await productRepository.CreateAsync(product);
                 return RedirectToAction(nameof(Index));
             }
 
-            return View(product);
+            return View(productViewModel);
         }
 
         public async Task<IActionResult> Edit(int? id)
@@ -69,29 +88,48 @@ namespace Shopee.Web.Controllers
             }
 
             var product = await productRepository.GetByIdAsync(id.Value);
+
             if (product == null)
             {
                 return NotFound();
             }
 
-            return View(product);
+            ProductViewModel productViewModel = product.ToProductViewModel();
+
+            return View(productViewModel);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Product product)
+        public async Task<IActionResult> Edit(ProductViewModel productViewModel)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
+                    string path = productViewModel.ImageUrl;
+
+                    if (productViewModel.ImageFile != null && productViewModel.ImageFile.Length > 0)
+                    {
+                        path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images\\products", productViewModel.ImageFile.FileName);
+
+                        using (var stream = new FileStream(path, FileMode.Create))
+                        {
+                            await productViewModel.ImageFile.CopyToAsync(stream);
+                        }
+
+                        path = $"~/images/products/{productViewModel.ImageFile.FileName}";
+                    }
+
+                    Product product = productViewModel.ToProduct(path);
+
                     // TODO: Pending to change to: this.User.Identity.Name
                     product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
                     await this.productRepository.UpdateAsync(product);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!await productRepository.ExistAsync(product.Id))
+                    if (!await productRepository.ExistAsync(productViewModel.Id))
                     {
                         return NotFound();
                     }
@@ -103,7 +141,7 @@ namespace Shopee.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            return View(product);
+            return View(productViewModel);
         }
 
         public async Task<IActionResult> Delete(int? id)
