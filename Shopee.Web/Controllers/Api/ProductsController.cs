@@ -1,7 +1,8 @@
 ﻿namespace Shopee.Web.Controllers.Api
-{
+{    
+    using System.Linq;
     using Microsoft.AspNetCore.Mvc;
-    using Shopee.Web.Data;
+    using Data;
 
     [Route("api/[Controller]")]
     public class ProductsController : Controller
@@ -16,7 +17,7 @@
         [HttpGet]
         public IActionResult GetProducts()
         {
-            return Ok(productRepository.GetAll());
+            return Ok(productRepository.GetAllWithUsers().OrderBy(p => p.Name));
         }
     }
 }

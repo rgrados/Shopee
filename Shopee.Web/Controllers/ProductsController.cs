@@ -10,6 +10,7 @@ namespace Shopee.Web.Controllers
     using Helpers;
     using Models;
     using Mappers;
+    using System.Linq;
 
     public class ProductsController : Controller
     {
@@ -25,7 +26,7 @@ namespace Shopee.Web.Controllers
 
         public IActionResult Index()
         {
-            return View(productRepository.GetAll());
+            return View(productRepository.GetAll().OrderBy(p => p.Name));
         }
 
         public async Task<IActionResult> Details(int? id)
