@@ -16,6 +16,13 @@
             };
         }
 
+        public static User ToUpdateUser(this ChangeUserViewModel changeUser, User user)
+        {
+            user.FirstName = changeUser.FirstName;
+            user.LastName = changeUser.LastName;
+            return user;
+        }
+
         public static LoginViewModel ToLoginViewModel(this RegisterNewUserViewModel registerUser)
         {
             return new LoginViewModel
@@ -24,6 +31,19 @@
                 RememberMe = false,
                 Username = registerUser.Username
             };
+        }
+
+        public static ChangeUserViewModel ToChangeUserViewModel(this User user)
+        {
+            ChangeUserViewModel model = new ChangeUserViewModel();
+
+            if (user != null)
+            {
+                model.FirstName = user.FirstName;
+                model.LastName = user.LastName;
+            }
+
+            return model;
         }
     }
 }
