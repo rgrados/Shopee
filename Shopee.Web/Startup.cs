@@ -48,7 +48,9 @@ namespace Shopee.Web
             services.AddScoped<IProductRepository, ProductRepository>();
 
             services.AddScoped<IUserHelper, UserHelper>();
-            
+
+            services.AddScoped<ICountryRepository, CountryRepository>();
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
