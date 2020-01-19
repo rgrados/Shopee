@@ -30,5 +30,18 @@
         public double Stock { get; set; }
 
         public User User { get; set; }
+
+        public string ImageFullPath
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(ImageUrl))
+                {
+                    return $"[localhost]{ ImageUrl.Substring(1) }";
+                }
+
+                return string.Empty;
+            }
+        }
     }
 }
