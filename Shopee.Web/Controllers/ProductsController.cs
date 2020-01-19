@@ -72,8 +72,7 @@ namespace Shopee.Web.Controllers
 
                 Product product = productViewModel.ToProduct(path);
 
-                // TODO: Pending to change to: this.User.Identity.Name
-                product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
+                product.User = await userHelper.GetUserByEmailAsync(User.Identity.Name);
                 await productRepository.CreateAsync(product);
                 return RedirectToAction(nameof(Index));
             }
@@ -124,9 +123,8 @@ namespace Shopee.Web.Controllers
 
                     Product product = productViewModel.ToProduct(path);
 
-                    // TODO: Pending to change to: this.User.Identity.Name
-                    product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
-                    await this.productRepository.UpdateAsync(product);
+                    product.User = await userHelper.GetUserByEmailAsync(User.Identity.Name);
+                    await productRepository.UpdateAsync(product);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -166,7 +164,7 @@ namespace Shopee.Web.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var product = await productRepository.GetByIdAsync(id);
-            await this.productRepository.DeleteAsync(product);
+            await productRepository.DeleteAsync(product);
             return RedirectToAction(nameof(Index));
         }
     }

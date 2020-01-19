@@ -2,9 +2,11 @@
 {
     using System.Linq;
     using System.Threading.Tasks;
-    using Helpers;
+    using Microsoft.AspNetCore.Identity;
     using Microsoft.AspNetCore.Mvc;
+    using Helpers;
     using Models;
+    using Mappers;
 
     public class AccountController : Controller
     {
@@ -50,6 +52,46 @@
         {
             await userHelper.LogoutAsync();
             return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            return this.View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register(RegisterNewUserViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await userHelper.GetUserByEmailAsync(model.Username);
+
+                if (user == null)
+                {
+                    var userResult = await userHelper.AddUserAsync(model.ToUser(), model.Password);
+
+                    if (userResult != IdentityResult.Success)
+                    {
+                        ModelState.AddModelError(string.Empty, "The user couldn't be created.");
+                        return View(model);
+                    }
+
+                    var loginResult = await userHelper.LoginAsync(model.ToLoginViewModel());
+
+                    if (loginResult.Succeeded)
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+
+                    ModelState.AddModelError(string.Empty, "The user couldn't be login.");
+                    return View(model);
+                }
+
+                ModelState.AddModelError(string.Empty, "The username is already registered.");
+            }
+
+            return View(model);
         }
     }
 }
