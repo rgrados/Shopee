@@ -1,31 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Shopee.Web.Data;
-using Shopee.Web.Data.Entities;
-
+﻿
 namespace Shopee.Web.Controllers
 {
+    using System.Threading.Tasks;
+    using System.IO;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.EntityFrameworkCore;
+    using Data;
+    using Data.Entities;
+    using Helpers;
+    using Models;
+    using Mappers;
+
     public class ProductsController : Controller
     {
-        private readonly DataContext _context;
+        private readonly IProductRepository productRepository;
 
-        public ProductsController(DataContext context)
+        private readonly IUserHelper userHelper;
+
+        public ProductsController(IProductRepository productRepository, IUserHelper userHelper)
         {
-            _context = context;
+            this.productRepository = productRepository;
+            this.userHelper = userHelper;
         }
 
-        // GET: Products
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            return View(await _context.Products.ToListAsync());
+            return View(productRepository.GetAll());
         }
 
-        // GET: Products/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -33,8 +35,7 @@ namespace Shopee.Web.Controllers
                 return NotFound();
             }
 
-            var product = await _context.Products
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var product = await productRepository.GetByIdAsync(id.Value);
             if (product == null)
             {
                 return NotFound();
@@ -43,29 +44,42 @@ namespace Shopee.Web.Controllers
             return View(product);
         }
 
-        // GET: Products/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Products/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Price,ImageUrl,LastPurchase,LastSale,IsAvailabe,Stock")] Product product)
+        public async Task<IActionResult> Create(ProductViewModel productViewModel)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(product);
-                await _context.SaveChangesAsync();
+                string path = string.Empty;
+
+                if (productViewModel.ImageFile != null && productViewModel.ImageFile.Length > 0)
+                {
+                    path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images\\products", productViewModel.ImageFile.FileName);
+
+                    using (var stream = new FileStream(path, FileMode.Create))
+                    {
+                        await productViewModel.ImageFile.CopyToAsync(stream);
+                    }
+
+                    path = $"~/images/products/{productViewModel.ImageFile.FileName}";
+                }
+
+                Product product = productViewModel.ToProduct(path);
+
+                // TODO: Pending to change to: this.User.Identity.Name
+                product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
+                await productRepository.CreateAsync(product);
                 return RedirectToAction(nameof(Index));
             }
-            return View(product);
+
+            return View(productViewModel);
         }
 
-        // GET: Products/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -73,36 +87,49 @@ namespace Shopee.Web.Controllers
                 return NotFound();
             }
 
-            var product = await _context.Products.FindAsync(id);
+            var product = await productRepository.GetByIdAsync(id.Value);
+
             if (product == null)
             {
                 return NotFound();
             }
-            return View(product);
+
+            ProductViewModel productViewModel = product.ToProductViewModel();
+
+            return View(productViewModel);
         }
 
-        // POST: Products/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Price,ImageUrl,LastPurchase,LastSale,IsAvailabe,Stock")] Product product)
+        public async Task<IActionResult> Edit(ProductViewModel productViewModel)
         {
-            if (id != product.Id)
-            {
-                return NotFound();
-            }
-
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(product);
-                    await _context.SaveChangesAsync();
+                    string path = productViewModel.ImageUrl;
+
+                    if (productViewModel.ImageFile != null && productViewModel.ImageFile.Length > 0)
+                    {
+                        path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images\\products", productViewModel.ImageFile.FileName);
+
+                        using (var stream = new FileStream(path, FileMode.Create))
+                        {
+                            await productViewModel.ImageFile.CopyToAsync(stream);
+                        }
+
+                        path = $"~/images/products/{productViewModel.ImageFile.FileName}";
+                    }
+
+                    Product product = productViewModel.ToProduct(path);
+
+                    // TODO: Pending to change to: this.User.Identity.Name
+                    product.User = await userHelper.GetUserByEmailAsync("grados_2008@hotmail.com");
+                    await this.productRepository.UpdateAsync(product);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ProductExists(product.Id))
+                    if (!await productRepository.ExistAsync(productViewModel.Id))
                     {
                         return NotFound();
                     }
@@ -113,10 +140,10 @@ namespace Shopee.Web.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(product);
+
+            return View(productViewModel);
         }
 
-        // GET: Products/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -124,8 +151,7 @@ namespace Shopee.Web.Controllers
                 return NotFound();
             }
 
-            var product = await _context.Products
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var product = await productRepository.GetByIdAsync(id.Value);
             if (product == null)
             {
                 return NotFound();
@@ -134,20 +160,13 @@ namespace Shopee.Web.Controllers
             return View(product);
         }
 
-        // POST: Products/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var product = await _context.Products.FindAsync(id);
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            var product = await productRepository.GetByIdAsync(id);
+            await this.productRepository.DeleteAsync(product);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool ProductExists(int id)
-        {
-            return _context.Products.Any(e => e.Id == id);
         }
     }
 }
